@@ -120,15 +120,31 @@ class JKDomLinkReplacer {
             foreach($this->replace_attributes as $i => $attr){
                 if ($element->hasAttribute($attr)){
                     $url = $element->getAttribute($attr);
-                    $newurl = $this->replaceUrl($url);
-                    if ($newurl !== false && $newurl !== $url){
-                       $element->setAttribute($attr, $newurl);
-                       //1 replacement made on this element, done!
-                       //one attribute was replace, <a href will never have <a src also,
-                       //just like <form will never have <form href and action 
-                       //go on to next element
-                       $num_replacements++;
-                       break; 
+
+                    //crazy where a <form action does not even use get string if form method is GET
+                    //thats why we are inserting a hidden form element at the bottom.
+                    if ($attr == 'action' && strtoupper($element->getAttribute('method')) == 'GET'){
+                        //parse append_get option and figure out the correct way to modify the dom
+                        parse_str ( $this->opts['append_get'], $appendGET );
+                        foreach($appendGET as $key => $val){
+                            $nw_input = $this->doc->createElement('input');
+                            $nw_input->setAttribute('type', 'hidden');
+                            $nw_input->setAttribute('name', $key);
+                            $nw_input->setAttribute('value', $val);
+                            $element->appendChild($nw_input);
+                        }
+                    }
+                    else{
+                        $newurl = $this->replaceUrl($url);
+                        if ($newurl !== false && $newurl !== $url){
+                           $element->setAttribute($attr, $newurl);
+                           //1 replacement made on this element, done!
+                           //one attribute was replace, <a href will never have <a src also,
+                           //just like <form will never have <form href and action 
+                           //go on to next element
+                           $num_replacements++;
+                           break; 
+                        }
                     }
                 }
             }//end iterating through all attributes needed to be replaced
